@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Firebase Service Account Key (specific name if possible, or keep generic if name changes)
+*-firebase-adminsdk-*.json
+
+# Temporary files
+server/temp_uploads/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,27 @@
+{
+  "id": "org.stremio.subtitles.store",
+  "version": "1.0.0",
+  "name": "Substremia",
+  "description": "A subtitle repository for movies and series, using Firebase for storage.",
+  "logo": "https://i.imgur.com/5Pv029b.png",
+  "background": "https://www.stremio.com/website/stremio-purple.jpg",
+  "resources": [
+    {
+      "name": "subtitles",
+      "types": ["movie", "series"],
+      "idPrefixes": ["tt"]
+    }
+  ],
+  "types": [
+    "movie",
+    "series"
+  ],
+  "idPrefixes": [
+    "tt"
+  ],
+  "catalogs": [],
+  "behaviorHints": {
+    "configurable": false,
+    "configurationRequired": false
+  }
+}
