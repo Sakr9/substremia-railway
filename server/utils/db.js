@@ -1,12 +1,31 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+if (!process.env.DATABASE_URL) {
+    console.error('DATABASE_URL environment variable is required');
+    process.exit(1);
+}
+
 // Configurazione del pool di connessione
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? {
         rejectUnauthorized: false
-    } : false
+    } : false,
+    // Configurazione aggiuntiva per gestire i tentativi di riconnessione
+    max: 20, // massimo numero di clients nel pool
+    idleTimeoutMillis: 30000, // quanto tempo un client può rimanere inattivo prima di essere chiuso
+    connectionTimeoutMillis: 2000, // quanto tempo aspettare prima di lanciare un timeout error
+    retryDelay: 3000 // quanto tempo aspettare tra i tentativi di riconnessione
+});
+
+// Gestione eventi del pool
+pool.on('error', (err, client) => {
+    console.error('Unexpected error on idle client', err);
+});
+
+pool.on('connect', () => {
+    console.log('Connected to PostgreSQL database');
 });
 
 // Query per creare la tabella subtitles se non esiste
@@ -26,14 +45,26 @@ CREATE TABLE IF NOT EXISTS subtitles (
 );
 `;
 
-// Funzione per inizializzare il database
-async function initializeDatabase() {
-    try {
-        await pool.query(createTableQuery);
-        console.log('Database initialized successfully');
-    } catch (error) {
-        console.error('Error initializing database:', error);
-        throw error;
+// Funzione per inizializzare il database con retry
+async function initializeDatabase(retries = 5) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const client = await pool.connect();
+            try {
+                await client.query(createTableQuery);
+                console.log('Database initialized successfully');
+                return;
+            } finally {
+                client.release();
+            }
+        } catch (error) {
+            console.error(`Attempt ${attempt}/${retries} failed:`, error.message);
+            if (attempt === retries) {
+                throw new Error(`Failed to initialize database after ${retries} attempts`);
+            }
+            // Attendi prima di riprovare
+            await new Promise(resolve => setTimeout(resolve, 3000));
+        }
     }
 }
 
